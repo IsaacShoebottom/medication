@@ -24,10 +24,12 @@ type Store struct {
 }
 
 type PageData struct {
-	Title     string
-	Message   string
-	ShowLogin bool
-	ShowInput bool
+	Title         string
+	Message       string
+	ShowLogin     bool
+	ShowInput     bool
+	Authenticated bool
+	Timestamps    [][]string
 }
 
 var Username string
@@ -41,14 +43,14 @@ func main() {
 	Username = os.Getenv("USERNAME")
 	fmt.Println("Username: ", Username)
 
-	Password = os.Getenv("API_KEY")
-	fmt.Println("API_KEY: ", Password)
+	Password = os.Getenv("PASSWORD")
+	fmt.Println("Password: ", Password)
 
 	DataDir = os.Getenv("DATA_DIR")
 	if DataDir == "" {
 		DataDir = "./data"
 	}
-	fmt.Println("DATA_DIR: ", DataDir)
+	fmt.Println("DataDir: ", DataDir)
 
 	DataStore = DataDir + "/data.json"
 
@@ -145,7 +147,7 @@ func commit(next int64) {
 	}
 }
 
-func query() bool {
+func queryCanPost() bool {
 	// Check if file exists
 	if file, err := os.Open(DataStore); err != nil {
 		fmt.Println("Error opening file, check permissions")
@@ -179,47 +181,57 @@ func query() bool {
 	return false
 }
 
-func index(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("index.html"))
-	var data PageData
-	fmt.Println("GET request received")
-	unauthenticated := PageData{
-		Title:     "Log in",
-		Message:   "Please enter your username and password",
-		ShowLogin: true,
-		ShowInput: false,
-	}
-	authenticated := PageData{
-		Title:     "View data",
-		Message:   "Welcome back " + Username + ". Check in after the timeout",
-		ShowLogin: false,
-		ShowInput: true,
-	}
-	// Check for session cookie
-	cookie, err := r.Cookie("session")
-	if err != nil {
-		data = unauthenticated
+func queryData() []Timestamp {
+	// Check if file exists
+	if file, err := os.Open(DataStore); err != nil {
+		fmt.Println("Error opening file, check permissions")
+		os.Exit(1)
 	} else {
-		// Parse cookie to int64
-		if session, err := strconv.ParseInt(cookie.Value, 10, 64); err != nil {
-			fmt.Println("Error parsing cookie")
-			data = unauthenticated
-		} else {
-			found := false
-			for _, uuid := range Authorised {
-				if uuid == session {
-					found = true
-				}
-			}
-			if found {
-				data = authenticated
-			} else {
-				// If cookie is not in Authorised list, remove it
-				data = unauthenticated
-			}
+		// Decode file
+		decoder := json.NewDecoder(file)
+		store := Store{}
+		if err = decoder.Decode(&store); err != nil {
+			fmt.Println("Error decoding file")
+			os.Exit(1)
 		}
+		if err = file.Close(); err != nil {
+			fmt.Println("Error closing file")
+			os.Exit(1)
+		}
+
+		return store.Timestamps
 	}
-	authenticated.ShowInput = query()
+	return nil
+}
+
+func index(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("GET request received")
+	tmpl := template.Must(template.ParseFiles("index.html"))
+	auth := checkAuth(r)
+	data := PageData{
+		Authenticated: auth,
+	}
+	if auth {
+		data.Title = "View data"
+		data.Message = "Welcome back " + Username + ". Check in after the timeout"
+		data.ShowInput = queryCanPost()
+
+		var timestamps [][]string
+		for _, ts := range queryData() {
+			one := time.Unix(ts.Current, 0)
+			two := time.Unix(ts.Next, 0)
+			ended := time.Now().Unix() > ts.Next
+			str := strconv.FormatBool(ended)
+			timestamps = append(timestamps, []string{one.Format(time.DateTime), two.Format(time.DateTime), str})
+		}
+
+		data.Timestamps = timestamps
+	} else {
+		data.Title = "Log in"
+		data.Message = "Please enter your username and password"
+		data.ShowInput = false
+		data.Timestamps = nil
+	}
 	if err := tmpl.Execute(w, data); err != nil {
 		http.Error(w, "Error rendering template", http.StatusInternalServerError)
 	}
@@ -227,6 +239,12 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 func post(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("POST request received")
+
+	if !checkAuth(r) {
+		http.Error(w, "Not authorised", http.StatusUnauthorized)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Error parsing form", http.StatusBadRequest)
 		return
@@ -273,12 +291,38 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 func logout(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("LOGOUT request received")
+
+	if !checkAuth(r) {
+		http.Error(w, "Not authorised", http.StatusUnauthorized)
+		return
+	}
+
 	cookie := http.Cookie{
-		Name:    "session",
-		Value:   "",
-		Expires: time.Now().Add(-1 * time.Hour),
+		Name:  "session",
+		Value: "",
 	}
 	http.SetCookie(w, &cookie)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 	return
+}
+
+func checkAuth(r *http.Request) bool {
+	// Check for session cookie
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		return false
+	} else {
+		// Parse cookie to int64
+		if session, err := strconv.ParseInt(cookie.Value, 10, 64); err != nil {
+			fmt.Println("Error parsing cookie")
+			return false
+		} else {
+			for _, uuid := range Authorised {
+				if uuid == session {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

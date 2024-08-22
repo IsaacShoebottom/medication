@@ -1,13 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>{{.Title}}</title>
 	<style>
 		* {
 			font-family: Tahoma, sans-serif;
 			font-size: large;
 		}
+
 		html {
 			background-color: #222222;
 			color: #eeeeee;
@@ -15,26 +16,54 @@
 	</style>
 </head>
 <body>
-<div style="display: flex; align-items: center; flex-direction: column">
-	<p>{{.Message}}</p>
-	{{if .ShowInput}}
-	<form action="/post" method="post">
-		<label>
-			How many hours should the timeout be?
-			<input type="number" name="next" min="1" max="24" value="24" step="1" required>
-		</label>
-		<button type="submit">Submit</button>
-	</form>
-	{{end}}
-	{{if .ShowLogin}}
-	<form action="/login" method="post">
-		<label>
-			<input type="text" name="username" required>
-			<input type="password" name="password" required>
-		</label>
-		<button type="submit">Login</button>
-	</form>
-	{{end}}
-
-</div>
+	<div style="display: flex; align-items: center; flex-direction: column">
+		<p>{{.Message}}</p>
+		{{if not .Authenticated}}
+		<form
+			action="/login"
+			method="post"
+			style="display: flex; flex-direction: column; align-items: stretch"
+		>
+			<label>
+				Username:
+				<input type="text" name="username" required />
+			</label>
+			<label>
+				Password:
+				<input type="password" name="password" required />
+			</label>
+			<button type="submit">Login</button>
+		</form>
+		{{end}} {{if .ShowInput}}
+		<form action="/post" method="post">
+			<label>
+				How many hours should the timeout be?
+				<input
+					type="number"
+					name="next"
+					min="1"
+					max="24"
+					value="24"
+					step="1"
+					required
+				/>
+			</label>
+			<button type="submit">Submit</button>
+		</form>
+		{{end}}
+		{{ range .Timestamps}}
+		<table style="text-align: center">
+			<tr>
+				<th>Taken</th>
+				<th>Ends</th>
+				<th>Has Ended</th>
+			</tr>
+			<tr>
+				<td>{{ index . 0}}</td>
+				<td>{{ index . 1}}</td>
+				<td>{{ index . 2}}</td>
+			</tr>
+		</table>
+		{{end}}
+	</div>
 </body>
