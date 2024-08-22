@@ -1,0 +1,5 @@
+# Intellij IDEA
+.idea/
+
+# Generated data store
+data/

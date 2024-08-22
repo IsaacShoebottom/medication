@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{.Title}}</title>
+	<style>
+		* {
+			font-family: Tahoma, sans-serif;
+			font-size: large;
+		}
+		html {
+			background-color: #222222;
+			color: #eeeeee;
+		}
+	</style>
+</head>
+<body>
+<div style="display: flex; align-items: center; flex-direction: column">
+	<p>{{.Message}}</p>
+	{{if .ShowForm}}
+	<form action="" method="post">
+		<label>
+			API Key:
+			<input type="text" name="key" required>
+		</label>
+		<button type="submit">Submit</button>
+	</form>
+	{{end}}
+</div>
+</body>
