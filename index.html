@@ -17,14 +17,24 @@
 <body>
 <div style="display: flex; align-items: center; flex-direction: column">
 	<p>{{.Message}}</p>
-	{{if .ShowForm}}
-	<form action="" method="post">
+	{{if .ShowInput}}
+	<form action="/post" method="post">
 		<label>
-			API Key:
-			<input type="text" name="key" required>
+			How many hours should the timeout be?
+			<input type="number" name="next" min="1" max="24" value="24" step="1" required>
 		</label>
 		<button type="submit">Submit</button>
 	</form>
 	{{end}}
+	{{if .ShowLogin}}
+	<form action="/login" method="post">
+		<label>
+			<input type="text" name="username" required>
+			<input type="password" name="password" required>
+		</label>
+		<button type="submit">Login</button>
+	</form>
+	{{end}}
+
 </div>
 </body>
