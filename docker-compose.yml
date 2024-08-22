@@ -1,0 +1,14 @@
+version: "3"
+services:
+  medication:
+    container_name: medication
+    image: medication
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    environment:
+      - DATA_DIR=/data
+    env_file:
+      - stack.env
+    volumes:
+      - /docker/appdata/medication/data:/data
