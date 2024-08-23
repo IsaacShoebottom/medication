@@ -13,4 +13,6 @@ services:
     env_file:
       - stack.env
     volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/medication/data:/data
