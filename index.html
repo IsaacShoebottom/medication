@@ -51,19 +51,19 @@
 			<button type="submit">Submit</button>
 		</form>
 		{{end}}
-		{{ range .Timestamps}}
 		<table style="text-align: center">
 			<tr>
 				<th>Taken</th>
 				<th>Ends</th>
 				<th>Has Ended</th>
 			</tr>
+			{{ range .Timestamps}}
 			<tr>
 				<td>{{ index . 0}}</td>
 				<td>{{ index . 1}}</td>
 				<td>{{ index . 2}}</td>
 			</tr>
+			{{end}}
 		</table>
-		{{end}}
 	</div>
 </body>
