@@ -51,6 +51,7 @@
 			<button type="submit">Submit</button>
 		</form>
 		{{end}}
+		{{ if .Timestamps }}
 		<table style="text-align: center">
 			<tr>
 				<th>Taken</th>
@@ -65,5 +66,6 @@
 			</tr>
 			{{end}}
 		</table>
+		{{end}}
 	</div>
 </body>
